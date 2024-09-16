@@ -28,31 +28,29 @@ double ID3Regressor::entropy(std::vector<double> target_variable) {
   double sumatory = 0;
   for (int i = 0; i < target_variable.size(); i++) {
     class_probabilities.push_back(target_variable[i] / target_variable.size());
-    sumatory += class_probabilities[i] * log2(class_probabilities[i]);
+    sumatory += class_probabilities[i] * log2(class_probabilities[i] + 1e-10);
   }
   return -sumatory;
 }
 std::tuple <std::vector<std::vector<double>>, std::vector<std::vector<double>>> ID3Regressor::split(std::vector<std::vector<double>> X, int feature_index, double threshold) {
-  std::vector<std::vector<double>> left; 
-  std::vector<std::vector<double>> right;
+  std::vector<std::vector<double>> left, right;
   for (int i = 0; i < X.size(); i++) {
     X[i][feature_index] <= threshold ? left.push_back(X[i]) : right.push_back(X[i]);
   }
-  std::cout << "SIZES: " << left.size() << ", " << right.size() << std::endl;
+  // std::cout << "SIZES: " << left.size() << ", " << right.size() << std::endl;
   return std::make_tuple(left, right);
 }
 double ID3Regressor::information_gain(std::vector<std::vector<double>> X, std::vector<double> target_variable, int feature_index, double threshold) {
   // Split the dataset and the target variable
-  auto [left_X, right_X] = split(X, feature_index, threshold);
   auto [left_target, right_target] = split_target(target_variable, threshold);  // Use split_target for target
   // Calculate entropies
   double left_entropy = entropy(left_target);
   double right_entropy = entropy(right_target);
   // Calculate weights
-  double left_weight = static_cast<double>(left_X.size() / X.size());
-  double right_weight = static_cast<double>(right_X.size() / X.size());
+  double left_weight = static_cast<double>(left_target.size() / target_variable.size());
+  double right_weight = static_cast<double>(right_target.size() / target_variable.size());
   // Calculate information gain
-  double information_gain_value = entropy(X[X.size() - 1]) - (left_weight * left_entropy + right_weight * right_entropy);
+  double information_gain_value = entropy(target_variable) - (left_weight * left_entropy + right_weight * right_entropy);
   return information_gain_value;
 }
 std::tuple <int, double> ID3Regressor::find_best_split(std::vector<std::vector<double>> X, std::vector<double> target_variable) {
@@ -105,10 +103,10 @@ Node* ID3Regressor::build_tree(std::vector<std::vector<double>> X, std::vector<d
   return new Node(best_feature, best_threshold, -1, left_node, right_node);
 }
 void ID3Regressor::fit(std::vector<std::vector<double>> X, std::vector<double> target_variable, int max_depth) {
-  initial_node_ = build_tree(X, target_variable);
+  initial_node_ = build_tree(X, target_variable, max_depth);
 }
 double ID3Regressor::predict_one(Node* node, std::vector<double> sample) {
-  if (node->value_ != -1) {
+  if (node->left_ == nullptr && node->right_ == nullptr) {
     return node->value_;
   }
   if (sample[node->feature_index_] <= node->threshold_) {
@@ -127,15 +125,3 @@ std::vector<double> ID3Regressor::predict(std::vector<std::vector<double>> X) {
   }
   return predictions;
 }
-
-
-    // def predict_one(self, node, sample):
-    //     if node.value is not None:
-    //         return node.value
-    //     if sample[node.feature] <= node.threshold:
-    //         return self.predict_one(node.left, sample)
-    //     else:
-    //         return self.predict_one(node.right, sample)
-    
-    // def predict(self, X):
-    //     return [self.predict_one(self.tree, sample) for sample in X]

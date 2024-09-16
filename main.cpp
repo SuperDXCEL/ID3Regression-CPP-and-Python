@@ -44,8 +44,8 @@ int main() {
     // Predict on the same dataset and print predictions
     std::vector<double> predictions = model.predict(X);
     std::cout << "\nPredictions:\n";
-    for (const auto& pred : predictions) {
-        std::cout << pred << "\n";
+    for (int i = 0; i < predictions.size(); i++) {
+        std::cout << predictions[i] << "\n";
     }
 
     return 0;
